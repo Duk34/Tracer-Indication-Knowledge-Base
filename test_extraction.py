@@ -9,6 +9,7 @@ from urllib.parse import urljoin # this library is used to join the base URL wit
 import en_ner_bc5cdr_md
 
 URL = "https://www.radiopharmaceuticals.info/pet-radiopharmaceuticals.html"
+REQUEST_TIMEOUT = 20.0  # seconds, increased to avoid occasional ReadTimeout on EBI/FDA endpoints
 
 def main():
     # Downloading the webpage's HTML content
@@ -70,7 +71,7 @@ def main():
 
 # This functions downloads the HTML content of a given URL and parses it using BeautifulSoup.
 def download_and_parse_html(url):
-    response = httpx.get(url)
+    response = httpx.get(url, timeout=REQUEST_TIMEOUT)
     html_content = response.text
     soup = BeautifulSoup(html_content, "html.parser")
     return soup
@@ -94,7 +95,7 @@ def get_disease_id(disease_name):
         "type": "class",
         "rows": 1
     }
-    response = httpx.get(URL, params=params)
+    response = httpx.get(URL, params=params, timeout=REQUEST_TIMEOUT)
     data = response.json()
 
     # Autocomplete completed this but it works
