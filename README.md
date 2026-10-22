@@ -22,5 +22,5 @@ mamba env create -f env.yaml
 4. Activate the environment:
 
 ```
-mamba activate tracer-ikb
+conda activate tracer-ikb
 ```
