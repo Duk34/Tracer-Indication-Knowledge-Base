@@ -1,7 +1,7 @@
 # I downloaded the raw data from the following links:
 # https://www.fda.gov/media/76860/download?attachment - orange book (FDA)
 # https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.xlsx - medicines output report (EMA)
-# https://www.ncbi.nlm.nih.gov/books/NBK5330/bin/micad.csv - micad (NCBI) this is only a summary of the micad database, which is a database of antimicrobial drugs. The full database is not available for download, but can be accessed through the NCBI website.
+# https://www.ncbi.nlm.nih.gov/books/NBK5330/bin/micad.csv - MICAD (Medical Imaging and Computer-Aided Diagnosis) this is only a summary of database. The full database is not available for download, but can be accessed through the NCBI website.
 # unfortunately the downloand links on the website https://radiopharm.idrblab.cn/download are not working, if they are fixed this will also need to be integrated.
 import pandas as pd
 from pathlib import Path
