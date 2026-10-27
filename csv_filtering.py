@@ -62,6 +62,25 @@ MODALITIES = {
     ],
 }
 
+
+# For initial filtering of FDA orange book:
+RADIOMEDICAL_MARKERS = [
+    "FLUDEOXYGLUCOSE",
+    "FLUORINE", "18F", "F-18"
+    "GALLIUM", "68GA", "GA-68"
+    "COPPER", "64CU", "CU-64",
+    "CARBON", "11C", "C-11",
+    "OXYGEN", "15O", "O-15",
+    "NITROGEN", 
+    "RUBIDIUM",
+    "IODINE",
+    "TECHNETIUM",
+    "INDIUM",
+    "THALLIUM",
+    "XENON",
+    "KRYPTON",
+]
+
 def main():
     # Reading the .cvs files from the intermediate data folder.
     df_fda = pd.read_csv(DATA_INTERMEDIATE_PATH/'fda_orange_book.csv')
@@ -122,16 +141,31 @@ def select_relevant_rows_ema(df, only_authorised=True, drop=True, use_modalities
 
 #TODO: Implement a function, that gets relevant info about entries in the FDA Orange Book from the internet, 
 # to be able to filter relevant rows, similar to the EMA function above.
+#TODO: Finish this function so that we get rid of false positives.
 
 def select_relevant_rows_fda(df):
     """
     Selects relevant rows from the FDA Orange Book dataframe based on the following criteria:
-    - The medicine must be indicated for PET, MRI, SPECT imaging
+    - The medicine ingredient must contain some indication about radioactive isotope in its content.
+    - Excluding OTC medication for obvious reasons
 
     param df: pandas DataFrame containing the FDA Orange Book data
     return: pandas DataFrame containing the filtered FDA Orange Book data
     """
-    pass
+    
+    # Drop OTC medication
+    otc = df["Type"].str.contains("RX|DISCN", regex=True)
+    df = df.loc[otc].copy()
+
+    # Define what is a radiochemical:
+    is_radiopharmaceutical = df["Ingredient"].str.contains("|".join(RADIOMEDICAL_MARKERS), regex=True, case=False)
+    # Drop non-relevant rows
+    df = df.loc[is_radiopharmaceutical].copy()
+
+    # Save to .csv file
+    df.to_csv(DATA_INTERMEDIATE_PATH/"FDA_filtered.csv",index=False)
+
+    return df
 
 #TODO: Implement a function, that filters MICAD database, relevant information should be contained within it.
 
