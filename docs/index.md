@@ -44,7 +44,7 @@ mamba env create -f env.yaml
 3. Activate the environment:
 
 ```
-conda activate tracer-ikb
+conda activate tikb
 ```
 
 ### Option B: uv
