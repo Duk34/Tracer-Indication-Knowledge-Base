@@ -14,7 +14,7 @@ Outputs (default folder: data/intermediate/literature/):
                                             request that produced them (provenance)
 
 Example:
-    python literature_search.py --query '"PET tracer" AND review' --from-year 2020 --to-year 2023 --max-results 200 --output-dir data/literature_search/PET_tracer_reviews
+    python literature_search_europe_pmc.py --query '"PET tracer" AND review' --from-year 2020 --to-year 2023 --max-results 200 --output-dir data/literature_search/PET_tracer_reviews
 
 --queries-file allows to pass a text file with one query per line (# = comment)      
 
