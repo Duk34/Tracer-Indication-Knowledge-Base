@@ -2,6 +2,7 @@ annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
 beautifulsoup4==4.15.0
+biothings_client==0.5.1
 blis==0.7.11
 catalogue==2.0.10
 certifi==2026.7.22
@@ -21,10 +22,12 @@ idna==3.20
 Jinja2==3.1.6
 joblib==1.6.0
 langcodes==3.5.1
+lxml==6.1.3
 markdown-it-py==4.2.0
 MarkupSafe==3.0.4
 mdurl==0.1.2
 murmurhash==1.0.15
+mygene==3.2.2
 narwhals==2.27.1
 nmslib-metabrainz==2.1.3
 numpy==1.26.4
@@ -33,6 +36,7 @@ packaging==26.3
 pandas==3.0.6
 preshed==3.0.13
 psutil==7.2.2
+PubChemPy==1.0.5
 pybind11==3.1.0
 pydantic==2.14.1
 pydantic_core==2.50.1
