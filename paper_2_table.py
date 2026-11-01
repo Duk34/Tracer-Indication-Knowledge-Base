@@ -19,7 +19,6 @@ import mygene # The import is currently unused but may be used to translate prot
 
 TABLE_2 = Path("data/raw/table_2.htm")
 TABLE_4 = Path("data/raw/table_4.htm")
-MAIN_TABLE_OUTPUT = Path("data/intermediate/integrated_table.csv")
 INTEGRATED_TABLE_OUTPUT = Path("data/intermediate/integrated_table.csv")
 COLUMNS = [
     "Tracer_ID", # The format is [nuclide]molecule_name.
@@ -85,7 +84,6 @@ def fetch_table_4(path: Path) -> pd.DataFrame:
     # The BeautifulSoup object is converted back to a string so that the table can be read by pandas.
     # StringIO is then used to create a file-like object.
     df = pd.read_html(io.StringIO(str(soup)))[0]
-    df.to_csv(MAIN_TABLE_OUTPUT, index=False)
     return df
 
 def integrate_tables(tables: list[pd.DataFrame]) -> pd.DataFrame:
