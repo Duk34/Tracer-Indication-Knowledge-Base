@@ -40,7 +40,7 @@ THERAPEUTIC_RADIONUCLIDES = ["177Lu", "90Y", "131I",]
 def main():
     # Fetch the tables from the HTML files
     tables = fetch_table_2(TABLE_2), fetch_table_4(TABLE_4)
-
+    # Integrate the two tables into a single DataFrame with the specified columns
     integrate_tables(tables)
 
     
@@ -112,15 +112,17 @@ def integrate_tables(tables):
         "Agent Type": "Type",
         "Target": "Target protein_ID",
     }
+
+    # The columns in table_4 have different names but correspond to the same information as in the main DataFrame. 
+    # We need to rename them to match the main DataFrame's columns.
     table_4.columns = table_4.columns.str.strip()
     table_4 = table_4[list(column_mapping.keys())].rename(columns=column_mapping)
     df_main = pd.concat([df_main, table_4], ignore_index=True)
 
-    # Source and Year all the same since this is the same publication.
 
     # Some cleanup, entries in Type to lowercase.
     df_main["Type"] = df_main["Type"].str.lower()
-    df_main = expand_multi_nuclide_rows(df_main, col_name="Tracer_ID", drop_therapeutic=False)
+    df_main = expand_multi_nuclide_rows(df_main, col_name="Tracer_ID")
 
     # Extract the information about the radionuclide from the Tracer_ID column and save it to the Radionuclide_ID column.
     df_main["Radionuclide_ID"] = df_main["Tracer_ID"].str.extract(r"\[(.*?)\]", expand=False)
@@ -131,7 +133,7 @@ def integrate_tables(tables):
     # Modality is determined by the radionuclide, so we can fill the Modality column based on the Radionuclide_ID.
     df_main["Modality"] = df_main.apply(determine_modality, axis=1)
     
-    df_main.to_csv("data/intermediate/integrated_table_2.csv", index=False)
+    df_main.to_csv("data/intermediate/integrated_table.csv", index=False)
 
 
 
@@ -150,18 +152,14 @@ def determine_modality(row):
 
 ### Following 2 functions are AI generated, their purpose is to handle tyopograohical errors in the Tracer_ID column,
 # speciffically in those 12 rows, where notation with "/" is used.
-def parse_multi_nuclide_tracer(
-    tracer_str: str, drop_therapeutic: bool = False
-) -> list[str]:
-  """Parses a multi-nuclide tracer string (separated by '/') into a list of
-
+def parse_multi_nuclide_tracer(tracer_str: str) -> list[str]:
+  """
+  Parses a multi-nuclide tracer string (separated by '/') into a list of
   individual standardized tracer names. Fixes common editorial typos found in
   Nature tables.
 
   Args:
       tracer_str: Raw string from the 'Tracer_ID' / 'Agent' column.
-      drop_therapeutic: If True, filters out purely therapeutic beta-/alpha
-        emitters (like 177Lu or 90Y) to keep only diagnostic PET/SPECT tracers.
   """
   # Convert to string and strip leading/trailing whitespace
   s = str(tracer_str).strip()
@@ -206,12 +204,6 @@ def parse_multi_nuclide_tracer(
   # -------------------------------------------------------------------------
   expanded_tracers = []
   for prefix in prefixes:
-    # Optional filter: skip therapeutic radionuclides (177Lu, 90Y, 225Ac) if needed
-    if drop_therapeutic and any(
-        ther in prefix for ther in ["177Lu", "90Y", "225Ac"]
-    ):
-      continue
-
     # Case 64 handling: '[18F]/[177Lu]Lu-rhPSMA-7.3'
     # Notice that '[18F]' is a covalent non-metal label (often written as '[18F]rhPSMA-7.3'
     # or '[18F]-rhPSMA-7.3'), whereas metals have the element symbol outside brackets
@@ -221,7 +213,7 @@ def parse_multi_nuclide_tracer(
 
   return expanded_tracers
 def expand_multi_nuclide_rows(
-    df: pd.DataFrame, col_name: str = "Tracer_ID", drop_therapeutic: bool = False
+    df: pd.DataFrame, col_name: str = "Tracer_ID"
 ) -> pd.DataFrame:
   """Splits rows containing multi-nuclide strings in `col_name` into separate rows.
 
@@ -232,16 +224,14 @@ def expand_multi_nuclide_rows(
   df_out = df.copy()
 
   # 1. Transform each string in the target column into a Python list of tracer names
-  df_out[col_name] = df_out[col_name].apply(
-      lambda x: parse_multi_nuclide_tracer(x, drop_therapeutic=drop_therapeutic)
-  )
+  df_out[col_name] = df_out[col_name].apply(parse_multi_nuclide_tracer)
 
   # 2. Use pandas .explode() on the column.
   # .explode() takes a column of lists and creates a new row for each element in the list,
   # automatically copying all other column values (Target, Type, Disease, etc.) to the new rows!
   df_out = df_out.explode(col_name, ignore_index=True)
 
-  # 3. Drop rows where the tracer might have been filtered out completely (if drop_therapeutic=True)
+  # 3. Drop rows where the tracer might have been filtered out completely
   df_out = df_out.dropna(subset=[col_name]).reset_index(drop=True)
 
   return df_out
