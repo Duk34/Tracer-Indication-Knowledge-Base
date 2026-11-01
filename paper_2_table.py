@@ -1,92 +1,112 @@
-# This script aims to extract all the used Radiopharmaceuticals from these two tables:
+# All used radiopharmaceuticals are extracted from these two tables:
 # https://www.nature.com/articles/s41392-024-02041-6/tables/2 (approved diagnostic radiopharmaceuticals)
 # https://www.nature.com/articles/s41392-024-02041-6/tables/4 (investigational radiopharmaceuticals)
-# For this script to work properly, the HTML content of the tables must be downloaded manually and saved as .htm files in the data/raw folder.
+# For proper execution, the HTML content of the tables must be downloaded manually and saved as .htm files in the data/raw folder.
+# The files must be named "table_2.htm" and "table_4.htm", respectively.
 
 import pandas as pd
 import re
 from bs4 import BeautifulSoup
 import io
-#import mygene # not used yet, might be helpful to translate the protein names to uniProt IDs and NCBI Gene IDs in the future.
+from pathlib import Path
+import pubchempy
+import mygene # The import is currently unused but may be used to translate protein names to UniProt and NCBI Gene IDs in the future.
 
-# First things first, we need to get the HTML content of the tables from the provided URLs. 
-# Nature website is protected from automated scraping, since we are only dealing with two tables,
-# we can manually download the HTML content of the tables and save them as .html files in the data/raw folder.
-# The files were saved as "table_2.html" and "table_4.html" respectively.
+# The HTML content of the tables must be obtained from the provided URLs.
+# Because the Nature website is protected from automated scraping, the HTML content must be downloaded manually
+# and saved as .htm files in the data/raw folder.
+# The files are expected to be named "table_2.htm" and "table_4.htm", respectively.
 
-TABLE_2 = "data/raw/table_2.htm"
-TABLE_4 = "data/raw/table_4.htm"
+TABLE_2 = Path("data/raw/table_2.htm")
+TABLE_4 = Path("data/raw/table_4.htm")
+MAIN_TABLE_OUTPUT = Path("data/intermediate/integrated_table.csv")
+INTEGRATED_TABLE_OUTPUT = Path("data/intermediate/integrated_table.csv")
 COLUMNS = [
-    "Tracer_ID", # [nuclide]molecule_name
-    "Synonyms", # Synonyms separated by semicolons
-    "Type", # Molecule type (small molecule, peptide, antibody, etc.)
-    "Pubchem_ID", # PubChem ID for the molecule (optional)
-    "Modality", # Imaging modality (PET, SPECT, etc.)
-    "Radionuclide_ID", # Radionuclide ID (e.g., 18F, 11C, etc.)
-    "Evidence Level", # Scale from 1 to 4 indicating the level of evidence supporting the tracer's use
-    "Target protein_ID", # UniProt ID for the target protein
-    "Target gene_ID", # NCBI Gene ID for the target gene
-    "Disease_ID", # Not decided yet, which database to use for disease IDs (e.g., MeSH, OMIM, etc.)
-    "Disease name", # Name of the disease associated with the tracer
-    "Target_species", # Species of the target protein (e.g., human, mouse, etc.)
-    "Source (URL)", # URL to the source of the information (e.g., PubMed, company website, etc.)
-    "Mechanism", # Description of the mechanism of action of the tracer (e.g., binding to a specific receptor, enzyme inhibition, etc.)
-    "Year", # Year - how old is this particular entry, for removing duplicates and prioritizing newer entries in the future.
+    "Tracer_ID", # The format is [nuclide]molecule_name.
+    "Synonyms", # Synonyms are separated by semicolons.
+    "Type", # The molecule type is specified (small molecule, peptide, antibody, etc.).
+    "Pubchem_ID", # The PubChem ID is specified when available.
+    "Modality", # The imaging modality is specified (PET, SPECT).
+    "Radionuclide_ID", # The radionuclide ID is specified (e.g., 18F, 11C, etc.).
+    "Evidence Level", # The evidence level is scaled from 4 (weakest) to 1 (strongest).
+    "Target protein_ID", # The UniProt ID for the target protein is specified.
+    "Target gene_ID", # The NCBI Gene ID for the target gene is specified.
+    "Disease_ID", # The disease database has not yet been selected (MONDO suggested).
+    "Disease name", # The disease associated with the tracer is specified.
+    "Target_species", # Scientific names of the target species are used (e.g., Homo sapiens, Mus musculus, etc.). Non-human species only appear in the table with the weakest evidence.
+    "Source (URL)", # The source URL
+    "Mechanism", # The mechanism of action is described (e.g., receptor binding, enzyme inhibition, etc.).
+    "Year", # The publication year is used for duplicate removal and prioritization. In downstream processing.
 ]
 PET_RADIONUCLIDES = ["18F", "68Ga", "11C", "64Cu", "82Rb", "89Zr", "13N",]
 SPECT_RADIONUCLIDES = ["99mTc", "111In", "123I", "125I", "201Tl", "67Ga",]
 THERAPEUTIC_RADIONUCLIDES = ["177Lu", "90Y", "131I",]
 
 def main():
-    # Fetch the tables from the HTML files
+    # The tables are fetched from the HTML files.
     tables = fetch_table_2(TABLE_2), fetch_table_4(TABLE_4)
-    # Integrate the two tables into a single DataFrame with the specified columns
+    # The two tables are integrated into a single DataFrame with the specified columns.
     integrate_tables(tables)
 
-    
 
-def fetch_table_2(path):
-    with open(path, "r", encoding="utf-8") as f:
-        html_content = f.read()
 
-    # Only select the last table in the HTML content, which contains the data we need.
+def fetch_table_2(path: Path) -> pd.DataFrame:
+    """
+    Fetches the data from the HTML file and returns it as a pandas DataFrame.
+
+    """
+    try:
+        html_content = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        print(f"File not found: {path}\nPlease make sure the HTML file is downloaded and saved in the data/raw directory.\nhttps://www.nature.com/articles/s41392-024-02041-6/tables/2")
+
+    # Only the last table in the HTML content is selected.
     soup = BeautifulSoup(html_content, "html.parser")
     soup = soup.select_one("table.data.last-table")
-    # For pandas to properly read the table, we need to convert the BeautifulSoup object back to a string
-    # and then use StringIO to create a file-like object.
+    # The BeautifulSoup object is converted back to a string so that the table can be read by pandas.
+    # StringIO is then used to create a file-like object.
     df = pd.read_html(io.StringIO(str(soup)))[0]
-    # Replace all instances of "--" with NaN values for better data handling.
+    # All instances of "--" are replaced with NaN values for improved data handling.
     df.replace(to_replace="--", value=pd.NA, inplace=True)
     return df
 
-def fetch_table_4(path):
-    with open(path, "r", encoding="utf-8") as f:
-        html_content = f.read()
+def fetch_table_4(path: Path) -> pd.DataFrame:
+    """
+    Fetches the data from the HTML file and returns it as a pandas DataFrame.
+    """
+    try:
+        html_content = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        print(f"File not found: {path}\nPlease make sure the HTML file is downloaded and saved in the data/raw directory.\nhttps://www.nature.com/articles/s41392-024-02041-6/tables/4")
 
-    # Only select the last table in the HTML content, which contains the data we need.
+    # Only the last table in the HTML content is selected.
     soup = BeautifulSoup(html_content, "html.parser")
     soup = soup.select_one("table.data.last-table")
-    # For pandas to properly read the table, we need to convert the BeautifulSoup object back to a string
-    # and then use StringIO to create a file-like object.
+    # The BeautifulSoup object is converted back to a string so that the table can be read by pandas.
+    # StringIO is then used to create a file-like object.
     df = pd.read_html(io.StringIO(str(soup)))[0]
-    df.to_csv("data/intermediate/table_4.csv", index=False)
+    df.to_csv(MAIN_TABLE_OUTPUT, index=False)
     return df
 
-def integrate_tables(tables):
+def integrate_tables(tables: list[pd.DataFrame]) -> pd.DataFrame:
     """
     Integrate the two tables into a single DataFrame with the specified columns.
+    arguments:
+        tables: A list containing the two DataFrames to be integrated.
+    returns:
+        A single DataFrame containing the integrated data from both tables.
     """
 
-    # Create the main DataFrame with the specified columns
+    # The main DataFrame is created with the specified columns.
     df_main = pd.DataFrame(columns=COLUMNS)
 
     ### Table 2: Approved Diagnostic Radiopharmaceuticals
-    # Extract the PET and SPECT names from the table
+    # The PET and SPECT names are extracted from the table.
     table_2 = tables[0]
     pet_names = table_2["PET"].dropna().tolist()
     spect_names = table_2["SPECT"].dropna().tolist()
 
-    # Create entries and fill them with available information. The rest of the columns will be filled with NaN values.
+    # Entries are created and populated with the available information. The remaining columns are filled with NaN values.
     new_pet = pd.DataFrame({
         "Tracer_ID": pet_names,
         "Modality": "PET",
@@ -97,14 +117,14 @@ def integrate_tables(tables):
         "Modality": "SPECT",
     })
 
-    # Merge the created entries into the main DataFrame.
+    # The created entries are merged into the main DataFrame.
     df_main = pd.concat([df_main, new_pet, new_spect], ignore_index=True)
 
-    # Now extract the synonyms from the names and save them to synonyms column.
+    # The synonyms are extracted from the names and saved to the Synonyms column.
     df_main["Synonyms"] = df_main["Tracer_ID"].str.extract(r"\s*\((.*?)\)", expand=False)
     df_main["Tracer_ID"] = df_main["Tracer_ID"].str.replace(r"\s*\(.*?\)", "", regex=True).str.strip()
 
-    
+
     ### Table 4: Investigational Radiopharmaceuticals
     table_4 = tables[1]
     column_mapping = {
@@ -113,34 +133,43 @@ def integrate_tables(tables):
         "Target": "Target protein_ID",
     }
 
-    # The columns in table_4 have different names but correspond to the same information as in the main DataFrame. 
-    # We need to rename them to match the main DataFrame's columns.
+    # The columns in table_4 have different names but correspond to the same information as in the main DataFrame.
+    # They are renamed to match the main DataFrame's columns.
     table_4.columns = table_4.columns.str.strip()
     table_4 = table_4[list(column_mapping.keys())].rename(columns=column_mapping)
     df_main = pd.concat([df_main, table_4], ignore_index=True)
 
 
-    # Some cleanup, entries in Type to lowercase.
+    # The entries in Type are converted to lowercase.
     df_main["Type"] = df_main["Type"].str.lower()
     df_main = expand_multi_nuclide_rows(df_main, col_name="Tracer_ID")
 
-    # Extract the information about the radionuclide from the Tracer_ID column and save it to the Radionuclide_ID column.
+    # The radionuclide information is extracted from Tracer_ID and saved to Radionuclide_ID.
     df_main["Radionuclide_ID"] = df_main["Tracer_ID"].str.extract(r"\[(.*?)\]", expand=False)
-    # Remove entries with purely therapeutic radionuclides from the main DataFrame.
+    # Entries with purely therapeutic radionuclides are removed from the main DataFrame.
     mask = df_main["Radionuclide_ID"].isin(THERAPEUTIC_RADIONUCLIDES)
     df_main = df_main[~mask].reset_index(drop=True)
 
-    # Modality is determined by the radionuclide, so we can fill the Modality column based on the Radionuclide_ID.
+    # The Modality column is populated based on Radionuclide_ID.
     df_main["Modality"] = df_main.apply(determine_modality, axis=1)
-    
-    df_main.to_csv("data/intermediate/integrated_table.csv", index=False)
+
+    df_main.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
+    return df_main
 
 
 
-# The nuclide determines the modality, so we can fill the Modality column based on the Radionuclide_ID.
-# If there is a radionuclide thats not in the PET_RADIONUCLIDES or SPECT_RADIONUCLIDES lists, 
-# raise an error to catch it and add it to the lists.
-def determine_modality(row):
+# The modality is determined by the nuclide and the Radionuclide_ID.
+# If a radionuclide is not included in PET_RADIONUCLIDES or SPECT_RADIONUCLIDES,
+# an error is raised so that it can be added to the appropriate list.
+def determine_modality(row: pd.Series) -> str:
+    """
+    Determines the imaging modality (PET or SPECT) based on the radionuclide ID.
+    If the radionuclide is not recognized, a ValueError is raised.
+    Args:
+        row: A pandas Series representing a row in the DataFrame, which must contain the 'Radionuclide_ID' column.
+    Returns:
+        The imaging modality as a string ("PET" or "SPECT").
+    """
     if row["Radionuclide_ID"] in PET_RADIONUCLIDES:
         return "PET"
     elif row["Radionuclide_ID"] in SPECT_RADIONUCLIDES:
@@ -150,8 +179,8 @@ def determine_modality(row):
 
 
 
-### Following 2 functions are AI generated, their purpose is to handle tyopograohical errors in the Tracer_ID column,
-# speciffically in those 12 rows, where notation with "/" is used.
+### The following two functions were generated to handle typographical errors in the Tracer_ID column,
+# specifically in the twelve rows where "/" notation is used.
 def parse_multi_nuclide_tracer(tracer_str: str) -> list[str]:
   """
   Parses a multi-nuclide tracer string (separated by '/') into a list of
@@ -161,53 +190,53 @@ def parse_multi_nuclide_tracer(tracer_str: str) -> list[str]:
   Args:
       tracer_str: Raw string from the 'Tracer_ID' / 'Agent' column.
   """
-  # Convert to string and strip leading/trailing whitespace
+  # The value is converted to a string and leading/trailing whitespace is removed.
   s = str(tracer_str).strip()
 
-  # Fast path: if there is no slash in the string, return it as a single-element list
+  # If no slash is present, the string is returned as a single-element list.
   if "/" not in s:
     return [s]
 
   # -------------------------------------------------------------------------
-  # STEP 1: Fix editorial typos in the raw HTML text
+  # STEP 1: Editorial typos in the raw HTML text are fixed.
   # -------------------------------------------------------------------------
-  # Fix Case 59: '[177Lu]/Lu-FAP-2286' -> '[177Lu]Lu-FAP-2286'
-  # (Removes the accidental slash placed between the bracketed isotope and metal symbol)
+  # Case 59 is fixed: '[177Lu]/Lu-FAP-2286' -> '[177Lu]Lu-FAP-2286'.
+  # The accidental slash between the bracketed isotope and metal symbol is removed.
   s = re.sub(r"\[(\d+[A-Za-z]+)\]/([A-Za-z]+)", r"[\1]\2", s)
 
-  # Fix Case 67: '[68Ga]Ga/[177Lu]Lu/-LM3' -> '[68Ga]Ga/[177Lu]Lu-LM3'
-  # (Removes the accidental slash placed right before the hyphen)
+  # Case 67 is fixed: '[68Ga]Ga/[177Lu]Lu/-LM3' -> '[68Ga]Ga/[177Lu]Lu-LM3'.
+  # The accidental slash before the hyphen is removed.
   s = re.sub(r"/\s*-", "-", s)
 
   # -------------------------------------------------------------------------
-  # STEP 2: Split into the isotope prefixes part and the core molecule name
+  # STEP 2: The isotope prefixes and core molecule name are separated.
   # -------------------------------------------------------------------------
-  # In all 12 cases, the slash '/' ONLY appears in the isotope prefix section.
-  # The core ligand name ALWAYS starts at the FIRST hyphen '-' in the string
+  # In all twelve cases, the slash '/' appears only in the isotope prefix section.
+  # The core ligand name always starts at the first hyphen '-' in the string
   # (e.g., '-FAP-2286', '-PSMA-I&T', '-rhPSMA-7.3', '-DOTA-TATE', '-3BP-227').
   if "-" not in s:
-    # Fallback in case there is no hyphen at all
+    # If no hyphen is present, the fallback is used.
     return [part.strip() for part in s.split("/") if part.strip()]
 
-  # Split at the FIRST hyphen ONLY (maxsplit=1)
-  # Example for '[68Ga]Ga/[177Lu]Lu-PSMA-I&T':
+  # The string is split at the first hyphen only (maxsplit=1).
+  # For example, for '[68Ga]Ga/[177Lu]Lu-PSMA-I&T':
   # prefix_part = '[68Ga]Ga/[177Lu]Lu'
   # ligand_core = 'PSMA-I&T'
   prefix_part, ligand_core = s.split("-", 1)
 
-  # Split the prefix section by '/' to get individual isotope prefixes
-  # Example: ['[68Ga]Ga', '[177Lu]Lu']
+  # The prefix section is split by '/' to obtain individual isotope prefixes.
+  # For example: ['[68Ga]Ga', '[177Lu]Lu']
   prefixes = [p.strip() for p in prefix_part.split("/") if p.strip()]
 
   # -------------------------------------------------------------------------
-  # STEP 3: Reconstruct full individual tracer names
+  # STEP 3: Full individual tracer names are reconstructed.
   # -------------------------------------------------------------------------
   expanded_tracers = []
   for prefix in prefixes:
-    # Case 64 handling: '[18F]/[177Lu]Lu-rhPSMA-7.3'
-    # Notice that '[18F]' is a covalent non-metal label (often written as '[18F]rhPSMA-7.3'
-    # or '[18F]-rhPSMA-7.3'), whereas metals have the element symbol outside brackets
-    # like '[68Ga]Ga-FAP-2286'. Keeping the hyphen makes it uniform: '[18F]-rhPSMA-7.3'.
+    # Case 64 is handled: '[18F]/[177Lu]Lu-rhPSMA-7.3'.
+    # '[18F]' is a covalent non-metal label (often written as '[18F]rhPSMA-7.3'
+    # or '[18F]-rhPSMA-7.3'), whereas metals have the element symbol outside brackets,
+    # as in '[68Ga]Ga-FAP-2286'. The hyphen is retained for consistency.
     full_tracer_name = f"{prefix}-{ligand_core}"
     expanded_tracers.append(full_tracer_name)
 
@@ -220,22 +249,21 @@ def expand_multi_nuclide_rows(
   Automatically duplicates all values from the remaining columns for each newly
   created row.
   """
-  # Work on a copy to avoid SettingWithCopyWarning in pandas
+  # A copy is used to avoid SettingWithCopyWarning in pandas.
   df_out = df.copy()
 
-  # 1. Transform each string in the target column into a Python list of tracer names
+  # 1. Each string in the target column is transformed into a Python list of tracer names.
   df_out[col_name] = df_out[col_name].apply(parse_multi_nuclide_tracer)
 
-  # 2. Use pandas .explode() on the column.
-  # .explode() takes a column of lists and creates a new row for each element in the list,
-  # automatically copying all other column values (Target, Type, Disease, etc.) to the new rows!
+  # 2. The column is expanded with pandas .explode().
+  # A new row is created for each list element, and the remaining column values are copied.
   df_out = df_out.explode(col_name, ignore_index=True)
 
-  # 3. Drop rows where the tracer might have been filtered out completely
+  # 3. Rows with completely filtered-out tracers are dropped.
   df_out = df_out.dropna(subset=[col_name]).reset_index(drop=True)
 
   return df_out
 
-    
+
 if __name__ == "__main__":
     main()
