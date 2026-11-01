@@ -215,8 +215,8 @@ def parse_multi_nuclide_tracer(tracer_str: str) -> list[str]:
 def expand_multi_nuclide_rows(
     df: pd.DataFrame, col_name: str = "Tracer_ID"
 ) -> pd.DataFrame:
-  """Splits rows containing multi-nuclide strings in `col_name` into separate rows.
-
+  """
+  Splits rows containing multi-nuclide strings in `col_name` into separate rows.
   Automatically duplicates all values from the remaining columns for each newly
   created row.
   """
