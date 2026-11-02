@@ -407,7 +407,7 @@ def map_cids_to_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     # Open the log file and write the header.
     with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write("Tracer_ID,Compound Name\n(used to find CID),CID,Nuclide cleaved off,Permutations\n")
+        f.write("Tracer_ID,Compound_Name_used_to_find_CID,CID,Nuclide_cleaved_off,Permutations\n")
 
     unique_tracers = df["Tracer_ID"].dropna().unique()
     cids = {}
