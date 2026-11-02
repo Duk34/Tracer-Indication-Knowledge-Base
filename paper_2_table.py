@@ -53,9 +53,9 @@ def main():
     # With Pubchem API extract CIDs for the compounds, that have it available.
     # This part creates a log file, that stores the information which string was used to find the CID.
     df_main = map_cids_to_dataframe(df_main)
+    df_main["Pubchem_ID"] = df_main["Pubchem_ID"].astype("Int64")  # Convert Pubchem_ID to Int64 to allow for NaN values.
     print(f"PubChem mapping completed. Log file saved to {LOG_FILE}")
     df_main.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
-    df_main["Pubchem_ID"] = df_main["Pubchem_ID"].astype("Int64")  # Convert Pubchem_ID to Int64 to allow for NaN values.
     print(f"Integrated table saved to {INTEGRATED_TABLE_OUTPUT}")
 
     return 0
@@ -393,7 +393,6 @@ def ask_api_for_cid(compound_name: str) -> tuple[int, str]:
         print(f"Error while fetching CID for {compound_name}: {e}")
         return None, compound_name
 
-    
 # Extraction of CID.
 def get_cid_from_pubchem(compound_names:list[str]) -> tuple[int, str, bool]:
     """
@@ -422,9 +421,6 @@ def get_cid_from_pubchem(compound_names:list[str]) -> tuple[int, str, bool]:
             return cid, final_name, last_resort
 
     return None, "CID not found", False  # If no CID is found in any of the permutations.
-
-    
-    
 
 # Mapping of CIDs to the main DataFrame.
 def map_cids_to_dataframe(df: pd.DataFrame) -> pd.DataFrame:
