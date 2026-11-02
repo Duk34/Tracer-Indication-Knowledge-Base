@@ -311,6 +311,7 @@ def generate_permutations(compound_name: str) -> list[str]:
         inverted_nuclide = f"{element_symbol}{mass_number}"
         inverted_nuclide_with_space = f"{element_symbol} {mass_number}"
         inverted_nuclide_with_dash = f"{element_symbol}-{mass_number}"
+        core_with_removed_nuclide = core.lstrip(element_symbol).lstrip(" -_")  # Remove the nuclide from the beginning of the compound name.
     else:
         # If the compound does not start with a nuclide, return the original name as the only permutation.
         return permutations
@@ -339,6 +340,30 @@ def generate_permutations(compound_name: str) -> list[str]:
     # The inverted nuclide notation with dash.
     # e.g., Gallium citrate Ga-68
     permutations.append(f"{core} {inverted_nuclide_with_dash}")
+
+    # For some compounds, nuclide, especially metalls like Ga or Cu, can be written twice, like this:
+    # [68Ga]Ga-FAPI-04
+    # In this case, we can also try to remove the nuclide from the beginning
+    # and see if PubChem can find the compound without it.
+
+    # For this purpose, another round of permutations on example [68Ga]Ga-FAPI-04:
+    # 68Ga FAPI-04
+    permutations.append(f"{nuclide} {core_with_removed_nuclide}")
+    # 68Ga-FAPI-04
+    permutations.append(f"{nuclide}-{core_with_removed_nuclide}")
+    # FAPI-04 68Ga
+    permutations.append(f"{core_with_removed_nuclide} {nuclide}")
+    # FAPI-04 (68Ga)
+    permutations.append(f"{core_with_removed_nuclide} ({nuclide})")
+    # FAPI-04 Ga68
+    permutations.append(f"{core_with_removed_nuclide} {inverted_nuclide}")
+    # FAPI-04 (Ga68)
+    permutations.append(f"{core_with_removed_nuclide} ({inverted_nuclide})")
+    # FAPI-04 Ga 68
+    permutations.append(f"{core_with_removed_nuclide} {inverted_nuclide_with_space}")
+    # FAPI-04 Ga-68
+    permutations.append(f"{core_with_removed_nuclide} {inverted_nuclide_with_dash}")
+
     # Last resort: Remove the nuclide entirely and try to find the compound.
     permutations.append(core)
 
