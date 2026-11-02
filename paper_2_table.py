@@ -55,6 +55,7 @@ def main():
     df_main = map_cids_to_dataframe(df_main)
     print(f"PubChem mapping completed. Log file saved to {LOG_FILE}")
     df_main.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
+    df_main["Pubchem_ID"] = df_main["Pubchem_ID"].astype("Int64")  # Convert Pubchem_ID to Int64 to allow for NaN values.
     print(f"Integrated table saved to {INTEGRATED_TABLE_OUTPUT}")
 
     return 0
@@ -162,6 +163,8 @@ def integrate_tables(tables: list[pd.DataFrame]) -> pd.DataFrame:
     # The Modality column is populated based on Radionuclide_ID.
     df_main["Modality"] = df_main.apply(determine_modality, axis=1)
 
+    # At this point there is no point in having duplicate entries in the main DataFrame, so they are removed.
+    df_main.drop_duplicates(subset=["Tracer_ID"], inplace=True, ignore_index=True)
     return df_main
 
 # The modality is determined by the nuclide and the Radionuclide_ID.
@@ -380,7 +383,7 @@ def ask_api_for_cid(compound_name: str) -> tuple[int, str]:
         The final compound name used to find the CID.
     """
     try:
-        time.sleep(0.3)  # To avoid hitting the API rate limit.
+        time.sleep(0.25)  # To avoid hitting the API rate limit.
         compound = pubchempy.get_compounds(compound_name, 'name')
         if compound:
             return compound[0].cid, compound_name
