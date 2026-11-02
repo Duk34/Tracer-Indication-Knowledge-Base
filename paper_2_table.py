@@ -21,7 +21,7 @@ import mygene # The import is currently unused but may be used to translate prot
 TABLE_2 = Path("data/raw/table_2.htm")
 TABLE_4 = Path("data/raw/table_4.htm")
 INTEGRATED_TABLE_OUTPUT = Path("data/intermediate/integrated_table.csv")
-LOG_FILE = Path("data/intermediate/pubchem_log.txt")
+LOG_FILE = Path("data/intermediate/pubchem_log.csv")
 
 COLUMNS = [
     "Tracer_ID", # The format is [nuclide]molecule_name.
@@ -53,6 +53,7 @@ def main():
     # With Pubchem API extract CIDs for the compounds, that have it available.
     # This part creates a log file, that stores the information which string was used to find the CID.
     df_main = map_cids_to_dataframe(df_main)
+    df_main.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
 
     return
 
@@ -159,10 +160,7 @@ def integrate_tables(tables: list[pd.DataFrame]) -> pd.DataFrame:
     # The Modality column is populated based on Radionuclide_ID.
     df_main["Modality"] = df_main.apply(determine_modality, axis=1)
 
-    df_main.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
     return df_main
-
-
 
 # The modality is determined by the nuclide and the Radionuclide_ID.
 # If a radionuclide is not included in PET_RADIONUCLIDES or SPECT_RADIONUCLIDES,
@@ -182,8 +180,6 @@ def determine_modality(row: pd.Series) -> str:
         return "SPECT"
     else:
         raise ValueError(f"Unknown radionuclide: {row['Radionuclide_ID']}. Please add it to the PET_RADIONUCLIDES or SPECT_RADIONUCLIDES lists.")
-
-
 
 ### The following two functions were generated to handle typographical errors in the Tracer_ID column,
 # specifically in the twelve rows where "/" notation is used.
@@ -282,115 +278,123 @@ def remove_brackets_from_compound_names(compound_name:str) -> str:
     compound_name = compound_name.replace("[", "(", 1).replace("]", ")", 1)
     return compound_name
 
-# Extraction of CID.
-def get_cid_from_pubchem(compound_name:str) -> tuple[int, bool, str]:
+# Generating permutations of compound names for PubChem API search.
+def generate_permutations(compound_name: str) -> list[str]:
     """
-    Gets the CID from PubChem for a given compound name. Since the API is very strict,
-    the compound name is modified in several ways to try to find the CID. If the CID is not found,
-    the nuclide is removed from the compound name and the search is tried again.
+    Generates permutations of the compound name to improve the chances of finding a match in PubChem.
+    Args:
+        compound_name: A compound name.
+    Returns:
+        A list of permutations of the compound name and nuclide.
+        If the compound name does not start with a nuclide, 
+        the original name is returned as the only permutation.
+    """
+    permutations = []
+    # Remove brackets and replace them with braces.
+    compound_name = remove_brackets_from_compound_names(compound_name)
+    permutations.append(compound_name)
+
+    # Extract the nuclide and the rest of the compound name using regex.
+    # This will return None if the compound does not start with "("
+    # Also recognizes m99Tc
+    match = re.match(r"^\((\d+m?[A-Za-z]+)\)-?(.*)$", compound_name)
+    if match:
+        nuclide = match.group(1)
+        core = match.group(2).lstrip(" -_") # Remove leading connectors if present.
+
+        # Splitting the mass number and the element symbol for the nuclide.
+        isotope_match = re.match(r"^(\d+m?)([A-Za-z]+)$", nuclide)
+        mass_number = isotope_match.group(1)
+        element_symbol = isotope_match.group(2)
+        inverted_nuclide = f"{element_symbol}{mass_number}"
+        inverted_nuclide_with_space = f"{element_symbol} {mass_number}"
+        inverted_nuclide_with_dash = f"{element_symbol}-{mass_number}"
+    else:
+        # If the compound does not start with a nuclide, return the original name as the only permutation.
+        return permutations
+
+    # The dash notation for the nuclide.
+    # e.g., 68Ga-Gallium citrate
+    permutations.append(f"{nuclide}-{core}")
+    # The space notation for the nuclide.
+    # e.g., 68Ga Gallium citrate
+    permutations.append(f"{nuclide} {core}")
+    # The nuclide at the end of the compound name.
+    # e.g., Gallium citrate 68Ga
+    permutations.append(f"{core} {nuclide}")
+    # The nuclide in parentheses at the end of the compound name.
+    # e.g., Gallium citrate (68Ga)
+    permutations.append(f"{core} ({nuclide})")
+    # The inverted nuclide notation.
+    # e.g., Gallium citrate Ga68
+    permutations.append(f"{core} {inverted_nuclide}")
+    # The inverted nuclide notation with parentheses.
+    # e.g., Gallium citrate (Ga68)
+    permutations.append(f"{core} ({inverted_nuclide})")
+    # The inverted nuclide notation with space.
+    # e.g., Gallium citrate Ga 68
+    permutations.append(f"{core} {inverted_nuclide_with_space}")
+    # The inverted nuclide notation with dash.
+    # e.g., Gallium citrate Ga-68
+    permutations.append(f"{core} {inverted_nuclide_with_dash}")
+    # Last resort: Remove the nuclide entirely and try to find the compound.
+    permutations.append(core)
+
+    return permutations
+
+# Function to ask PubChem API for the CID of a given compound name.
+def ask_api_for_cid(compound_name: str) -> tuple[int, str]:
+    """
+    Asks the PubChem API for the CID of a given compound name.
     Args:
         compound_name: A compound name.
     Returns:
         The CID of the compound.
-        bool: True if the CID was found by removing the nuclide, False otherwise.
-        str: The final compound name used to find the CID.
-
+        The final compound name used to find the CID.
     """
-    ### First remove brackets and replace them with braces, as PubChem does not recognize brackets in compound names.
-    compound_name = remove_brackets_from_compound_names(compound_name)
     try:
-        time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
+        time.sleep(0.3)  # To avoid hitting the API rate limit.
         compound = pubchempy.get_compounds(compound_name, 'name')
         if compound:
-            return compound[0].cid, False, compound_name
-        # Remove the braces and replace the last one with a dash.
-        if compound_name.startswith("(") and ")" in compound_name:
-            compound_name = compound_name.replace("(", "", 1).replace(")", "-", 1)
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
-            compound = pubchempy.get_compounds(compound_name, 'name')
-            if compound:
-    
-                return compound[0].cid, False, compound_name
-        # Replace the dash with space and try again.
-        if "-" in compound_name:
-            compound_name = compound_name.replace("-", " ", 1)
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
-            compound = pubchempy.get_compounds(compound_name, 'name')
-            if compound:
-                
-                return compound[0].cid, False, compound_name
-        # Move the nuclide to the end.
-        if " " in compound_name:
-            nuclide, compound_name = compound_name.split(" ", 1)
-            compound_name = f"{compound_name} {nuclide}"
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
-            compound = pubchempy.get_compounds(compound_name, 'name')
-            if compound:
-    
-                return compound[0].cid, False, compound_name
-        # Put parentheses around the nuclide and try again.
-        if " " in compound_name:
-            compound, nuclide = compound_name.rsplit(" ", 1)
-            compound_name = f"{compound} ({nuclide})"
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
-            compound = pubchempy.get_compounds(compound_name, 'name')
-            if compound:
-                return compound[0].cid, False, compound_name
-
-        # Change the position of the mass number, e.g., 18F to F18 and try again.
-        split_name = compound_name.rsplit(" ", 1)
-        if len(split_name) > 1 and split_name[1] and split_name[1][1].isdigit():
-            nuclide = re.sub(r"(\d+)([A-Za-z]+)", r"\2\1", split_name[1])
-            compound_name = f"{split_name[0]} {nuclide}"
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
-            compound = pubchempy.get_compounds(compound_name, "name")
-            if compound:
-                return compound[0].cid, False, compound_name
-              
-        # Remove the braces again and try again.
-        if "(" in compound_name and ")" in compound_name.rsplit(" ", 1)[1]:
-            # Remove one of the opening braces and the closing braces. 
-            # Counting from the end of the string.
-            compound_name = compound_name[::-1].replace("(", "", 1)[::-1]
-            compound_name = compound_name[::-1].replace(")", "", 1)[::-1]
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
-            compound = pubchempy.get_compounds(compound_name, "name")
-            if compound:
-                return compound[0].cid, False, compound_name
-
-        # Put space between the mass number and the atom symbol, e.g., 18F to 18 F and try again.
-        if " " in compound_name:
-            split_name = compound_name.rsplit(" ", 1)
-            if len(split_name) > 1:
-                nuclide = re.sub(r"([A-Za-z]+)(\d+)", r"\1 \2", split_name[1])
-                compound_name = f"{split_name[0]} {nuclide}"
-                time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit
-                compound = pubchempy.get_compounds(compound_name, "name")
-                if compound:
-                    return compound[0].cid, False, compound_name
-
-        # Replace the last space with a dash and try again.
-        if " " in compound_name:
-            compound_name = compound_name[::-1].replace(" ", "-", 1)[::-1]
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit        
-            compound = pubchempy.get_compounds(compound_name, "name")
-            if compound:
-                return compound[0].cid, False, compound_name
-
-        # Remove the nuclide and try for the last time, this can result with different compounds, 
-        # so we will return True to indicate that the nuclide was removed.
-        if " " in compound_name:
-            compound_name = compound_name.rsplit(" ", 1)[0]
-            compound_name = compound_name.lstrip("-")  # Remove any leading -
-            time.sleep(0.35)  # Sleep for 0.35 seconds to avoid hitting the API rate limit         
-            compound = pubchempy.get_compounds(compound_name, "name")
-            if compound:
-                return compound[0].cid, True, compound_name
-        # If all else fails, return None.
-        return None, False, None
+            return compound[0].cid, compound_name
+        else:
+            return None, compound_name
     except Exception as e:
-        print(f"An error occurred while fetching CID for {compound_name}: {e}")
-        return None, False, None
+        print(f"Error while fetching CID for {compound_name}: {e}")
+        return None, compound_name
+
+    
+# Extraction of CID.
+def get_cid_from_pubchem(compound_names:list[str]) -> tuple[int, str, bool]:
+    """
+    Gets the CID from PubChem for a given list of compound names. 
+    The function iterates through the list of compound names, which are generated permutations of the original compound name,
+      to find the CID. If the CID is not found in any of the permutations, it returns None.
+    Args:
+        compound_names: A list of compound names.
+    Returns:
+        int: The CID of the compound.
+        str: The final compound name used to find the CID.
+        bool: True if the CID was found by removing the nuclide, False otherwise.
+    """
+    number_of_permutations = len(compound_names)
+    if number_of_permutations == 1:
+        cid, final_name = ask_api_for_cid(compound_names[0])
+        if cid:
+            return cid, final_name, False
+        else:
+            return None, final_name, False
+
+    for i, compound_name in enumerate(compound_names):
+        cid, final_name = ask_api_for_cid(compound_name)
+        if cid:
+            last_resort = (i == number_of_permutations - 1)  # True if this is the last permutation (nuclide removed).
+            return cid, final_name, last_resort
+
+    return None, "CID not found", False  # If no CID is found in any of the permutations.
+
+    
+    
 
 # Mapping of CIDs to the main DataFrame.
 def map_cids_to_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -401,20 +405,22 @@ def map_cids_to_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         The updated DataFrame with the Pubchem_ID column populated.
     """
+    # Open the log file and write the header.
+    with open(LOG_FILE, "w", encoding="utf-8") as f:
+        f.write("Tracer_ID,Compound Name\n(used to find CID),CID,Nuclide cleaved off,Permutations\n")
+
     unique_tracers = df["Tracer_ID"].dropna().unique()
     cids = {}
-    for tracer in unique_tracers:
-        cid, last_resort, final_name = get_cid_from_pubchem(tracer)
+    for index, tracer in enumerate(unique_tracers):
+        compound_names = generate_permutations(tracer)
+        cid, final_name, last_resort = get_cid_from_pubchem(compound_names)
         cids[tracer] = cid
-        with open(LOG_FILE, "a") as f:
-            if cid:
-                f.write(f"{tracer}: {cid}, found using {final_name}\n" if not last_resort else f"{tracer}: {cid}, found using {final_name} (NUCLIDE REMOVED)\n")
-            else:
-                f.write(f"{tracer}: CID not found\n")
+        # Log the results to the log file.
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"{tracer},{final_name},{cid},{last_resort},{';'.join(compound_names)}\n")
 
-    # Add the CIDs to the main DataFrame.
+    # Map the CIDs to the DataFrame.
     df["Pubchem_ID"] = df["Tracer_ID"].map(cids)
-    df.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
     return df
 
     
