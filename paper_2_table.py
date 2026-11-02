@@ -53,9 +53,11 @@ def main():
     # With Pubchem API extract CIDs for the compounds, that have it available.
     # This part creates a log file, that stores the information which string was used to find the CID.
     df_main = map_cids_to_dataframe(df_main)
+    print(f"PubChem mapping completed. Log file saved to {LOG_FILE}")
     df_main.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
+    print(f"Integrated table saved to {INTEGRATED_TABLE_OUTPUT}")
 
-    return
+    return 0
 
 
 def fetch_table_2(path: Path) -> pd.DataFrame:
