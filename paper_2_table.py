@@ -164,7 +164,9 @@ def integrate_tables(tables: list[pd.DataFrame]) -> pd.DataFrame:
     df_main["Modality"] = df_main.apply(determine_modality, axis=1)
 
     # At this point there is no point in having duplicate entries in the main DataFrame, so they are removed.
-    df_main.drop_duplicates(subset=["Tracer_ID"], inplace=True, ignore_index=True)
+    df_main = df_main.groupby("Tracer_ID", sort=False, as_index=False).first()
+
+
     return df_main
 
 # The modality is determined by the nuclide and the Radionuclide_ID.
