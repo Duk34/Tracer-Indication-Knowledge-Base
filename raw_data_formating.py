@@ -22,7 +22,7 @@ def main():
 
 def fda_to_csv():
     # Read the FDA orange book data
-    fda_data = pd.read_csv(DATA_RAW_PATH/"products.txt", sep='~', on_bad_lines='warn')
+    fda_data = pd.read_csv(DATA_RAW_PATH/"products.txt", sep='~', on_bad_lines='warn', dtype={"Appl_No": str, "Product_No": str})
     # Convert to CSV
     fda_data.to_csv(DATA_INTERMEDIATE_PATH/"fda_orange_book.csv", index=False)
     return fda_data
