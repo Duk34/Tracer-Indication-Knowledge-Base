@@ -10,5 +10,6 @@ data/processed/*
 !data/processed/.gitkeep
 data/intermediate/*
 !data/intermediate/.gitkeep
+data/literature_search/*
 *.csv
 temp/
