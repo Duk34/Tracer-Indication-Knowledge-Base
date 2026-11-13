@@ -1,0 +1,4 @@
+sources:
+  fda_orange_book: "https://www.fda.gov/media/76860/download?attachment"
+  ema_medicines_report: "https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.xlsx"
+  paper_xml: "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC11697352/fullTextXML"
