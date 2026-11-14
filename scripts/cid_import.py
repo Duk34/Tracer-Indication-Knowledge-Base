@@ -87,11 +87,10 @@ def generate_permutations(compound_name: str) -> list[str]:
     permutations.append(f"{core_with_removed_nuclide} ({nuclide})")
     permutations.append(f"{core_with_removed_nuclide} {inverted_nuclide}")
     permutations.append(f"{core_with_removed_nuclide} ({inverted_nuclide})")
-    permutations.append(
-        f"{core_with_removed_nuclide} {inverted_nuclide_with_space}"
-    )
+    permutations.append(f"{core_with_removed_nuclide} {inverted_nuclide_with_space}")
     permutations.append(f"{core_with_removed_nuclide} {inverted_nuclide_with_dash}")
 
+    # Some additional permutations for specific cases.
     if "·H2O" in core:
         core = core.replace("·H2O", "").strip()
         permutations.append(f"({mass_number}){core}")
@@ -100,6 +99,14 @@ def generate_permutations(compound_name: str) -> list[str]:
             "DOTA-TATE", "DOTATATE"
         ).strip()
         permutations.append(f"{nuclide}-{core_with_removed_nuclide}")
+
+    if "Tc" in nuclide:
+        permutations.append(f"Technetium ({nuclide}) {core_with_removed_nuclide}")
+        permutations.append(f"{inverted_nuclide_with_dash.replace('Tc', 'Technetium')} {core}")
+        permutations.append(f"Technetium-{nuclide}-{core_with_removed_nuclide}")
+        "Technetium tc 99m succimer"
+        permutations.append(f"Technetium {inverted_nuclide_with_space} {core}")
+
 
     permutations.append(core)
     return permutations
