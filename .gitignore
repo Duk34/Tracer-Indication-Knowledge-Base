@@ -2,3 +2,14 @@
 venv/
 env/
 __pycache__/
+*.pyc
+.vscode/
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/intermediate/*
+!data/intermediate/.gitkeep
+data/literature_search/*
+*.csv
+temp/
