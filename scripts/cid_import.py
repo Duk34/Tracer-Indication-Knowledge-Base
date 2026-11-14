@@ -70,7 +70,8 @@ def generate_permutations(compound_name: str) -> list[str]:
         core_with_removed_nuclide = core.lstrip(element_symbol).lstrip(" -_")
     else:
         return permutations
-
+    
+    permutations.append(f"[{nuclide}]{core}")
     permutations.append(f"{nuclide}-{core}")
     permutations.append(f"{nuclide} {core}")
     permutations.append(f"{core} {nuclide}")
