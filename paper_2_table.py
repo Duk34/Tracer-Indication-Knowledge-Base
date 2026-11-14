@@ -27,7 +27,8 @@ COLUMNS = [
     "Tracer_ID", # The format is [nuclide]molecule_name.
     "Synonyms", # Synonyms are separated by semicolons.
     "Type", # The molecule type is specified (small molecule, peptide, antibody, etc.).
-    "Pubchem_ID", # The PubChem ID is specified when available.
+    "CID", # The PubChem Compound ID (CID) is specified. (if available)
+    "SID", # The PubChem Substance ID (SID) is specified. (if available and if the CID is not available)
     "Modality", # The imaging modality is specified (PET, SPECT).
     "Radionuclide_ID", # The radionuclide ID is specified (e.g., 18F, 11C, etc.).
     "Evidence Level", # The evidence level is scaled from 4 (weakest) to 1 (strongest).
@@ -53,7 +54,7 @@ def main():
     # With Pubchem API extract CIDs for the compounds, that have it available.
     # This part creates a log file, that stores the information which string was used to find the CID.
     df_main = map_cids_to_dataframe(df_main)
-    df_main["Pubchem_ID"] = df_main["Pubchem_ID"].astype("Int64")  # Convert Pubchem_ID to Int64 to allow for NaN values.
+    df_main["CID"] = df_main["CID"].astype("Int64")  # Convert Pubchem_ID to Int64 to allow for NaN values.
     print(f"PubChem mapping completed. Log file saved to {LOG_FILE}")
     df_main.to_csv(INTEGRATED_TABLE_OUTPUT, index=False)
     print(f"Integrated table saved to {INTEGRATED_TABLE_OUTPUT}")
@@ -288,7 +289,7 @@ def remove_brackets_from_compound_names(compound_name:str) -> str:
 # Generating permutations of compound names for PubChem API search.
 def generate_permutations(compound_name: str) -> list[str]:
     """
-    Generates permutations of the compound name to improve the chances of finding a match in PubChem.
+    Generates permutations of the compound name to improve the chances of finding a match in PubChem database.
     Args:
         compound_name: A compound name.
     Returns:
@@ -369,6 +370,17 @@ def generate_permutations(compound_name: str) -> list[str]:
     # FAPI-04 Ga-68
     permutations.append(f"{core_with_removed_nuclide} {inverted_nuclide_with_dash}")
 
+    # Some compounds that have been determined to be difficult to find and require special handling.
+    if "·H2O" in core:
+        # For example, "NH3·H2O" is not found in PubChem, but "NH3" is.
+        core = core.replace("·H2O", "").strip()
+        permutations.append(f"({mass_number}){core}")
+    # Gallium-68 DOTATATE is often written as DOTA-TATE, so we can try to replace it.
+    if "DOTA-TATE" in core:
+        core_with_removed_nuclide = core_with_removed_nuclide.replace("DOTA-TATE", "DOTATATE").strip()
+        permutations.append(f"{nuclide}-{core_with_removed_nuclide}")
+
+    
     # Last resort: Remove the nuclide entirely and try to find the compound.
     permutations.append(core)
 
@@ -393,6 +405,18 @@ def ask_api_for_cid(compound_name: str) -> tuple[int, str]:
             return None, compound_name
     except Exception as e:
         print(f"Error while fetching CID for {compound_name}: {e}")
+        print("Retrying after 1 second...")
+        time.sleep(1)
+        try:
+            compound = pubchempy.get_compounds(compound_name, 'name')
+            if compound:
+                print(f"Successfully fetched CID for {compound_name} on retry.")
+                return compound[0].cid, compound_name
+            else:
+                print(f"No CID found for {compound_name} on retry.")
+                return None, compound_name
+        except Exception as e:
+            print(f"Error while fetching CID for {compound_name} on retry: {e}")
         return None, compound_name
 
 # Extraction of CID.
@@ -431,7 +455,7 @@ def map_cids_to_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Args:
         df: The main DataFrame containing the Tracer_ID column.
     Returns:
-        The updated DataFrame with the Pubchem_ID column populated.
+        pd.DataFrame: The updated DataFrame with the CID column populated.
     """
     # Open the log file and write the header.
     with open(LOG_FILE, "w", encoding="utf-8") as f:
@@ -448,7 +472,7 @@ def map_cids_to_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             f.write(f"{tracer},{final_name},{cid},{last_resort},{';'.join(compound_names)}\n")
 
     # Map the CIDs to the DataFrame.
-    df["Pubchem_ID"] = df["Tracer_ID"].map(cids)
+    df["CID"] = df["Tracer_ID"].map(cids)
     return df
 
     
