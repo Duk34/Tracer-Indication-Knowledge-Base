@@ -14,7 +14,7 @@ LOG_FILE = PUBCHEM_CID_LOG_CSV
 
 def main():
     # The integrated table is read from the output of parse_html.py.
-    df_main = pd.read_csv(INTEGRATED_TABLE)
+    df_main = pd.read_csv(INTEGRATED_TABLE_CORRECTED)
 
     # With PubChem API extract CIDs for the compounds, that have it available.
     # This part creates a log file, that stores the information which string was
@@ -59,7 +59,7 @@ def generate_permutations(compound_name: str) -> list[str]:
     match = re.match(r"^\((\d+m?[A-Za-z]+)\)-?(.*)$", compound_name)
     if match:
         nuclide = match.group(1)
-        core = match.group(2).lstrip(" -_")
+        core = match.group(2).lstrip(" -_") if "Zr" not in nuclide else match.group(2).lstrip(" -_").split("-")[-1]
 
         isotope_match = re.match(r"^(\d+m?)([A-Za-z]+)$", nuclide)
         mass_number = isotope_match.group(1)
@@ -67,11 +67,12 @@ def generate_permutations(compound_name: str) -> list[str]:
         inverted_nuclide = f"{element_symbol}{mass_number}"
         inverted_nuclide_with_space = f"{element_symbol} {mass_number}"
         inverted_nuclide_with_dash = f"{element_symbol}-{mass_number}"
-        core_with_removed_nuclide = core.lstrip(element_symbol).lstrip(" -_")
+        core_with_removed_nuclide = re.sub(rf"^{element_symbol}(?=-|[A-Z])", "", core).lstrip(" -_")
     else:
         return permutations
     
     permutations.append(f"[{nuclide}]{core}")
+    permutations.append(f"({nuclide})-{core}")
     permutations.append(f"{nuclide}-{core}")
     permutations.append(f"{nuclide} {core}")
     permutations.append(f"{core} {nuclide}")
@@ -103,9 +104,9 @@ def generate_permutations(compound_name: str) -> list[str]:
 
     if "Tc" in nuclide:
         permutations.append(f"Technetium ({nuclide}) {core_with_removed_nuclide}")
+        permutations.append(f"Technetium {inverted_nuclide_with_dash} {core_with_removed_nuclide}")
         permutations.append(f"{inverted_nuclide_with_dash.replace('Tc', 'Technetium')} {core}")
         permutations.append(f"Technetium-{nuclide}-{core_with_removed_nuclide}")
-        "Technetium tc 99m succimer"
         permutations.append(f"Technetium {inverted_nuclide_with_space} {core}")
 
 
