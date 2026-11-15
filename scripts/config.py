@@ -13,6 +13,7 @@ TABLE_4_HTML = DATA_RAW_PATH / "table_4.htm"
 TABLE_2_CSV = DATA_INTERMEDIATE_PATH / "table_2.csv"
 TABLE_4_CSV = DATA_INTERMEDIATE_PATH / "table_4.csv"
 INTEGRATED_TABLE = DATA_INTERMEDIATE_PATH / "integrated_table.csv"
+INTEGRATED_TABLE_CORRECTED = DATA_INTERMEDIATE_PATH / "integrated_table_corrected.csv"
 INTEGRATED_TABLE_CID = DATA_INTERMEDIATE_PATH / "integrated_table_CID.csv"
 INTEGRATED_TABLE_SID = DATA_INTERMEDIATE_PATH / "integrated_table_SID.csv"
 PUBCHEM_CID_LOG_CSV = DATA_INTERMEDIATE_PATH / "pubchem_CID_log.csv"
@@ -46,3 +47,8 @@ PET_RADIONUCLIDES = ["18F", "68Ga", "11C", "64Cu", "82Rb", "89Zr", "13N",]
 SPECT_RADIONUCLIDES = ["99mTc", "111In", "123I", "125I", "201Tl", "67Ga",]
 # Radionuclides not used in diagnostics
 THERAPEUTIC_RADIONUCLIDES = ["177Lu", "90Y", "131I",]
+# The corrected names of chemicals from the original table
+CORRECTED_NAMES = {
+    "[99mTc]NaTcO4": "[99mTc]Sodium pertechnetate",
+    "[123I]Sodium iodinate": "[123I]Sodium iodide",
+}
