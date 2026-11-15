@@ -77,7 +77,7 @@ def generate_permutations(compound_name: str) -> list[str]:
     permutations.append(f"{nuclide} {core}")
     permutations.append(f"{core} {nuclide}")
     permutations.append(f"{core} ({nuclide})")
-    permutations.append(f"[{core}] {inverted_nuclide}")
+    permutations.append(f"{core} [{inverted_nuclide}]")
     permutations.append(f"{core} {inverted_nuclide}")
     permutations.append(f"{core} ({inverted_nuclide})")
     permutations.append(f"{core} {inverted_nuclide_with_space}")
