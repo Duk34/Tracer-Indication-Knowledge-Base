@@ -16,4 +16,7 @@ URLS=(
     "http://static.radiopharmabank.com/files/BA/biological_activity_of_clinical_trail.csv"
 )
 
-wget -P "$OUT_DIR" "${URLS[@]}"
+for url in "${URLS[@]}"; do
+    filename="$(basename "$url")"
+    wget -O "$OUT_DIR/radiopharma_${filename}" "$url"
+done
