@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-# Paths
+# Paths and URLs
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_RAW_PATH = PROJECT_ROOT / "data" / "raw"
 DATA_INTERMEDIATE_PATH = PROJECT_ROOT / "data" / "intermediate"
@@ -17,12 +17,15 @@ INTEGRATED_TABLE_CORRECTED = DATA_INTERMEDIATE_PATH / "integrated_table_correcte
 INTEGRATED_TABLE_CID = DATA_INTERMEDIATE_PATH / "integrated_table_CID.csv"
 INTEGRATED_TABLE_SID = DATA_INTERMEDIATE_PATH / "integrated_table_SID.csv"
 INTEGRATED_TABLE_SYNONYMS = DATA_INTERMEDIATE_PATH / "integrated_table_synonyms.csv"
+INTEGRATED_TABLE_RADIOPHARM = DATA_INTERMEDIATE_PATH / "integrated_table_radiopharm.csv"
 
 
 PUBCHEM_CID_LOG_CSV = DATA_INTERMEDIATE_PATH / "pubchem_CID_log.csv"
 PUBCHEM_CID_LOG_TXT = DATA_INTERMEDIATE_PATH / "pubchem_CID_log.txt"
 PUBCHEM_SID_LOG_CSV = DATA_INTERMEDIATE_PATH / "pubchem_SID_log.csv"
 PUBCHEM_SID_LOG_TXT = DATA_INTERMEDIATE_PATH / "pubchem_SID_log.txt"
+
+RADIOPHARM_API_URL = "https://radiopharm.idrblab.cn/api/radiopharm/postSearchDrugResult"
 
 # Global variables:
 # The columns of the main DF
