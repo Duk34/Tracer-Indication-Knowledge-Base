@@ -19,7 +19,6 @@ from pathlib import Path
 import mygene
 import pandas as pd
 
-
 try:
     from .config import *
 except ImportError:
