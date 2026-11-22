@@ -14,7 +14,6 @@
 import re
 from pathlib import Path
 
-import mygene
 import numpy as np
 import pandas as pd
 
