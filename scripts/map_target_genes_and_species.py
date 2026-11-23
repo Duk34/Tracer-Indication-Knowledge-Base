@@ -25,6 +25,7 @@ except ImportError:
     from config import *
 
 
+#probably we need some more species here
 SPECIES_MAP = {
     9606: "Homo sapiens",
     10029: "Cricetulus griseus",
