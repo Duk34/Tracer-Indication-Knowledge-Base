@@ -6,13 +6,13 @@ The data is then used to fill missing entries in the main table.
 
 try:
     from .config import (
-        INTEGRATED_TABLE_SYNONYMS,
+        INTEGRATED_TABLE_PROTEIN_ID,
         RADIOPHARM_API_URL,
         INTEGRATED_TABLE_RADIOPHARM
     )
 except ImportError:
     from config import (
-        INTEGRATED_TABLE_SYNONYMS, 
+        INTEGRATED_TABLE_PROTEIN_ID,
         RADIOPHARM_API_URL,
         INTEGRATED_TABLE_RADIOPHARM
     )
@@ -29,7 +29,7 @@ import re
 
 
 def main():
-  df = pd.read_csv(INTEGRATED_TABLE_SYNONYMS)
+  df = pd.read_csv(INTEGRATED_TABLE_PROTEIN_ID)
   ids = {}
   headers = {
       "User-Agent": (
