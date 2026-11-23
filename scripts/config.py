@@ -20,6 +20,7 @@ INTEGRATED_TABLE_SYNONYMS = DATA_INTERMEDIATE_PATH / "integrated_table_synonyms.
 INTEGRATED_TABLE_PROTEIN_ID = DATA_INTERMEDIATE_PATH / "integrated_table_protein_id.csv"
 INTEGRATED_TABLE_RADIOPHARM = DATA_INTERMEDIATE_PATH / "integrated_table_radiopharm.csv"
 INTEGRATED_TABLE_RADIOPHARM_POPULATED = DATA_INTERMEDIATE_PATH / "integrated_table_radiopharm_populated.csv"
+INTEGRATED_TABLE_DISEASE_EXPANDED = DATA_INTERMEDIATE_PATH / "integrated_table_disease_expanded.csv"
 
 
 PUBCHEM_CID_LOG_CSV = DATA_INTERMEDIATE_PATH / "pubchem_CID_log.csv"
@@ -61,12 +62,11 @@ SPECT_RADIONUCLIDES = ["99mTc", "111In", "123I", "125I", "201Tl", "67Ga",]
 THERAPEUTIC_RADIONUCLIDES = ["177Lu", "90Y", "131I",]
 # The corrected names of chemicals from the original table
 CORRECTED_NAMES = {
-    "[99mTc]NaTcO4": "[99mTc]Sodium pertechnetate",
-    "[123I]Sodium iodinate": "[123I]Sodium iodide",
-    "[99mTc]Tc-DTPA-Tilmanocept": "[99mTc]Tilmanocept",
+    "[99mTc]NaTcO4": "[99mTc]Sodium pertechnetate", # convert formula to name
+    "[123I]Sodium iodinate": "[123I]Sodium iodide", # wrong name
+    "[99mTc]Tc-DTPA-Tilmanocept": "[99mTc]Tilmanocept", # does not work with the helator name inside
     "[99mTc]TcECG": "[99mTc]ECG",
-    
-
+    "[13N]NH3·H2O": "[13N]NH3", # remove ·H2O from the name
 }
 
 # Fallbacks for target names that MyGene cannot resolve reliably.
