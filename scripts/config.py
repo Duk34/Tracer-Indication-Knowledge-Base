@@ -63,6 +63,10 @@ THERAPEUTIC_RADIONUCLIDES = ["177Lu", "90Y", "131I",]
 CORRECTED_NAMES = {
     "[99mTc]NaTcO4": "[99mTc]Sodium pertechnetate",
     "[123I]Sodium iodinate": "[123I]Sodium iodide",
+    "[99mTc]Tc-DTPA-Tilmanocept": "[99mTc]Tilmanocept",
+    "[99mTc]TcECG": "[99mTc]ECG",
+    
+
 }
 
 # Fallbacks for target names that MyGene cannot resolve reliably.
