@@ -1,4 +1,21 @@
 
+'''This script converts the Supplementary Data 2 from the Imagable Genome into the curation scheme. It 
+requires the supplementary data to be downloaded first using download_imagable_genome_supplementary_data.py. 
+
+What it does:
+- Maps Ensembl gene IDs to Entrez gene IDs and gene symbols using MyGene.info. Rows without an Ensembl ID or without a mapping are kept, with empty Target gene_ID
+  and Target gene symbol fields (723 rows as of 2026-11-23).
+  !!!This is just a temporary solution to avoid different IDs in one column. We still need to decide how to handle these cases, e.g. by keeping the Ensembl ID in a separate column!!!
+
+- Extracts clean PubMed IDs (some are stored as "b'12345678'") and creates
+  PubMed URLs from them.
+- Creates one row per tracer-gene pair, merging synonyms, protein names and PubMed URLs with ";"
+- Creates synonyms column by combining the two radiotracer name columns.
+- Uses the second radiotracer name as tracer name if the first is missing.
+
+'''
+
+
 import mygene
 import pandas as pd
 
