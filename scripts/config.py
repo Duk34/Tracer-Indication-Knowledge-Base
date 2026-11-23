@@ -17,7 +17,9 @@ INTEGRATED_TABLE_CORRECTED = DATA_INTERMEDIATE_PATH / "integrated_table_correcte
 INTEGRATED_TABLE_CID = DATA_INTERMEDIATE_PATH / "integrated_table_CID.csv"
 INTEGRATED_TABLE_SID = DATA_INTERMEDIATE_PATH / "integrated_table_SID.csv"
 INTEGRATED_TABLE_SYNONYMS = DATA_INTERMEDIATE_PATH / "integrated_table_synonyms.csv"
+INTEGRATED_TABLE_PROTEIN_ID = DATA_INTERMEDIATE_PATH / "integrated_table_protein_id.csv"
 INTEGRATED_TABLE_RADIOPHARM = DATA_INTERMEDIATE_PATH / "integrated_table_radiopharm.csv"
+INTEGRATED_TABLE_RADIOPHARM_POPULATED = DATA_INTERMEDIATE_PATH / "integrated_table_radiopharm_populated.csv"
 
 
 PUBCHEM_CID_LOG_CSV = DATA_INTERMEDIATE_PATH / "pubchem_CID_log.csv"
@@ -25,7 +27,11 @@ PUBCHEM_CID_LOG_TXT = DATA_INTERMEDIATE_PATH / "pubchem_CID_log.txt"
 PUBCHEM_SID_LOG_CSV = DATA_INTERMEDIATE_PATH / "pubchem_SID_log.csv"
 PUBCHEM_SID_LOG_TXT = DATA_INTERMEDIATE_PATH / "pubchem_SID_log.txt"
 
+# REST API RadioPharm
 RADIOPHARM_API_URL = "https://radiopharm.idrblab.cn/api/radiopharm/postSearchDrugResult"
+RADIOPHARM_INFO_API = "https://radiopharm.idrblab.cn/api/radiopharm/getDrugInfo"
+RADIOPHARM_DRUG_DESCRIPTION = "https://radiopharm.idrblab.cn/api/radiopharm/getDrugDescription"
+RADIOPHARM_TARGET_INFO = "https://radiopharm.idrblab.cn/api/radiopharm/getTarget"
 
 # Global variables:
 # The columns of the main DF
@@ -57,4 +63,101 @@ THERAPEUTIC_RADIONUCLIDES = ["177Lu", "90Y", "131I",]
 CORRECTED_NAMES = {
     "[99mTc]NaTcO4": "[99mTc]Sodium pertechnetate",
     "[123I]Sodium iodinate": "[123I]Sodium iodide",
+}
+
+# Fallbacks for target names that MyGene cannot resolve reliably.
+# Values are semicolon-separated for protein complexes or several subunits.
+TARGET_ID_MAPPING = {
+    "AMPAR": {
+        "protein": "P42261;P42262;P42263;P48058",
+        "gene": "2890;2891;2892;2893",
+    },
+    "A\u03b2": {
+        "protein": "P05067",
+        "gene": "351",
+    },
+    "CB1R/CB2R": {
+        "protein": "P21554;P34972",
+        "gene": "1268;1281",
+    },
+    "CD3": {
+        "protein": "P04234;P07766;P09693",
+        "gene": "915;916;917",
+    },
+    "CD8": {
+        "protein": "P01732;P10966",
+        "gene": "925;926",
+    },
+    "FAP": {
+        "protein": "Q12884",
+        "gene": "2191",
+    },
+    "FAAH": {
+        "protein": "O00519",
+        "gene": "2166",
+    },
+    "GRPR": {
+        "protein": "P30550",
+        "gene": "2925",
+    },
+    "Granzyme B": {
+        "protein": "P10144",
+        "gene": "3002",
+    },
+    "IDO": {
+        "protein": "P14902",
+        "gene": "3620",
+    },
+    "Integrin": {
+        "protein": "P06756;P05106",
+        "gene": "3685;3690",
+    },
+    "MAGL": {
+        "protein": "Q99685",
+        "gene": "11343",
+    },
+    "Nectin-4": {
+        "protein": "Q96NY8",
+        "gene": "81607",
+    },
+    "NTSR-1": {
+        "protein": "P30989",
+        "gene": "4914",
+    },
+    "PD-1": {
+        "protein": "Q15116",
+        "gene": "5133",
+    },
+    "PD-L1": {
+        "protein": "Q9NZQ7",
+        "gene": "29126",
+    },
+    "PSMA": {
+        "protein": "Q04609",
+        "gene": "2346",
+    },
+    "SSTR": {
+        "protein": "P30874",
+        "gene": "6752",
+    },
+    "Sigma receptors": {
+        "protein": "Q99720",
+        "gene": "10280",
+    },
+    "Tau": {
+        "protein": "P10636",
+        "gene": "4137",
+    },
+    "UPAR": {
+        "protein": "Q03405",
+        "gene": "5329",
+    },
+    "VMAT2": {
+        "protein": "Q05940",
+        "gene": "6571",
+    },
+    "\u03b1-synuclein": {
+        "protein": "P37840",
+        "gene": "6622",
+    },
 }
