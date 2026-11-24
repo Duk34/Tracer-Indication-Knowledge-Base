@@ -1,40 +1,57 @@
+# Each download log holds wget's line (date, URL, size) and the file's sha256,
+# so we can tell later which version of a source was used.
+
+
 rule download_fda_orange_book:
     output:
-        zip="data/raw/orange_book.zip",
-    params:
-        url=config["sources"]["fda_orange_book"],
+        "data/raw/orange_book.zip",
     log:
         "logs/download/download_fda_orange_book.log",
-    conda:
-        "env.yaml"
+    params:
+        url=config["sources"]["fda_orange_book"],
     shell:
         """
-        echo "[$(date -Iseconds)] {params.url}" > {log}
-        wget -nv "{params.url}" -O {output.zip} >> {log} 2>&1
-        sha256sum {output.zip} >> {log}
+        wget -nv "{params.url}" -O {output} 2>{log}
+        sha256sum {output} >>{log}
         """
+
 
 rule unzip_fda_orange_book:
     input:
-        zip="data/raw/orange_book.zip",
+        "data/raw/orange_book.zip",
     output:
-        products="data/raw/products.txt",
-        patent="data/raw/patent.txt",
-        exclusivity="data/raw/exclusivity.txt",
-    params:
-        outdir="data/raw",
+        "data/raw/products.txt",
+        "data/raw/patent.txt",
+        "data/raw/exclusivity.txt",
     log:
         "logs/download/unzip_fda_orange_book.log",
-    conda:
-        "../envs/download.yaml"
+    shell:
+        "unzip -o -DD {input} -d data/raw >{log} 2>&1"
+
+
+rule download_nature_table:
+    output:
+        "data/raw/nature_tables/{table}.html",
+    log:
+        "logs/download/download_nature_table_{table}.log",
+    params:
+        url=lambda wc: config["sources"]["nature_tables"][wc.table],
     shell:
         """
-        unzip -o -DD {input.zip} -d {params.outdir} > {log} 2>&1
+        wget -nv "{params.url}" -O {output} 2>{log}
+        sha256sum {output} >>{log}
         """
 
 
-rule download_ema:
-
-
-rule download_micad:
-
+rule download_radiopharmabank:
+    output:
+        "data/raw/radiopharmabank/{table}.csv",
+    log:
+        "logs/download/download_radiopharmabank_{table}.log",
+    params:
+        url=lambda wc: config["sources"]["radiopharmabank"][wc.table],
+    shell:
+        """
+        wget -nv "{params.url}" -O {output} 2>{log}
+        sha256sum {output} >>{log}
+        """
