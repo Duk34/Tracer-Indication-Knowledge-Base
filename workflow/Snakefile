@@ -1,0 +1,21 @@
+configfile: "config/config.yaml"
+
+
+include: "rules/download.smk"
+include: "rules/radiopharm.smk"
+
+
+rule all:
+    input:
+        "data/raw/products.txt",
+        "data/raw/patent.txt",
+        "data/raw/exclusivity.txt",
+        expand(
+            "data/raw/nature_tables/{table}.html",
+            table=config["sources"]["nature_tables"],
+        ),
+        expand(
+            "data/raw/radiopharmabank/{table}.csv",
+            table=config["sources"]["radiopharmabank"],
+        ),
+#        "data/processed/radiopharm_tracers.csv",

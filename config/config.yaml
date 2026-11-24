@@ -1,0 +1,21 @@
+sources:
+  fda_orange_book: "https://www.fda.gov/media/76860/download?attachment"
+  ema_medicines_report: "https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.xlsx"
+  paper_xml: "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC11697352/fullTextXML"
+
+  # Tables 2 (approved) and 4 (investigational) of
+  # "Radiopharmaceuticals: ..." Signal Transduct Target Ther 2024, doi:10.1038/s41392-024-02041-6
+  # Input of the RadioPharm (radiopharm.idrblab.cn) pipeline.
+  nature_tables:
+    table_2: "https://www.nature.com/articles/s41392-024-02041-6/tables/2"
+    table_4: "https://www.nature.com/articles/s41392-024-02041-6/tables/4"
+
+  # CSV exports from http://www.radiopharmabank.com/upload-download
+  # ("clinical_trail" is the spelling on their server)
+  radiopharmabank:
+    general_information_of_TRP: "http://static.radiopharmabank.com/files/GI/general_information_of_TRP.csv"
+    reference_information_of_TRP: "http://static.radiopharmabank.com/files/RI/reference_information_of_TRP.csv"
+    general_information_of_target: "http://static.radiopharmabank.com/files/GI/general_information_of_target.csv"
+    general_information_of_radionuclide: "http://static.radiopharmabank.com/files/GI/general_information_of_radionuclide.csv"
+    general_information_of_ligand: "http://static.radiopharmabank.com/files/GI/general_information_of_ligand.csv"
+    biological_activity_of_clinical_trail: "http://static.radiopharmabank.com/files/BA/biological_activity_of_clinical_trail.csv"
