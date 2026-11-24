@@ -7,13 +7,13 @@ from tikb.enrich.pubchem.client import call_with_retry
 
 
 def cid_synonyms(cid: int) -> list[str]:
-    compound = call_with_retry(pubchempy.Compound.from_cid, cid)
-    return compound.synonyms if compound else []
+    synonyms = call_with_retry(lambda: pubchempy.Compound.from_cid(cid).synonyms)
+    return synonyms or []
 
 
 def sid_synonyms(sid: int) -> list[str]:
-    substance = call_with_retry(pubchempy.Substance.from_sid, sid)
-    return substance.synonyms if substance else []
+    synonyms = call_with_retry(lambda: pubchempy.Substance.from_sid(sid).synonyms)
+    return synonyms or []
 
 
 def split_synonyms(values: pd.Series) -> set[str]:
