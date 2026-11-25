@@ -35,7 +35,7 @@ tikb = "tikb.cli:main"           # the `tikb` command used by the Snakemake rule
 
 [build-system]
 requires = ["hatchling"]
-build-backend = "hatchling.build"   # finds the package in src/tikb automatically
+build-backend = "hatchling.build"   # finds the package in tikb/ automatically
 
 [tool.hatch.metadata]
 allow-direct-references = true  # en_ner_bc5cdr_md is installed from a URL

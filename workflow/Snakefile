@@ -18,4 +18,4 @@ rule all:
             "data/raw/radiopharmabank/{table}.csv",
             table=config["sources"]["radiopharmabank"],
         ),
-#        "data/processed/radiopharm_tracers.csv",
+        "data/processed/radiopharm_tracers.csv",

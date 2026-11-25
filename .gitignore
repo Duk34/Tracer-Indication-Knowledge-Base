@@ -8,3 +8,5 @@ __pycache__/
 .idea
 logs/
 pdocs/
+data/
+data_backup
