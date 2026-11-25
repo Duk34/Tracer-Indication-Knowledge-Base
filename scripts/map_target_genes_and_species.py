@@ -14,6 +14,7 @@ eg. python map_target_genes_and_species.py radiopharma_tracers_from_downloaded_c
 
 
 import argparse
+import re
 from pathlib import Path
 
 import mygene
@@ -45,14 +46,20 @@ def assign_column(df: pd.DataFrame, col: str, values: pd.Series, mode: str) -> N
 
 
 def map_uniprot(curation_df: pd.DataFrame, mode: str = "fill-missing") -> pd.DataFrame:
-    # clean IDs: strip whitespace and isoform suffix (P12345-2 -> P12345)
-    clean = (
-        curation_df["Target protein_ID"]
-        .astype("string")
-        .str.strip()
-        .str.replace(r"-\d+$", "", regex=True)
-    )
-    uniprot_ids = clean.dropna().unique().tolist()
+    # Split multi-value cells on ";", strip whitespace, and drop isoform suffixes (P12345-2 -> P12345)
+    split_ids: list[list[str]] = []
+    unique_ids_set: set[str] = set()
+
+    for ids in curation_df["Target protein_ID"].fillna("").astype("string"):
+        row_ids = []
+        for part in ids.split(";"):
+            cleaned = re.sub(r"-\d+$", "", part.strip())
+            if cleaned:
+                row_ids.append(cleaned)
+                unique_ids_set.add(cleaned)
+        split_ids.append(row_ids)
+
+    uniprot_ids = sorted(unique_ids_set)
     if not uniprot_ids:
         print("No UniProt IDs found, nothing to map.")
         return curation_df
@@ -81,9 +88,24 @@ def map_uniprot(curation_df: pd.DataFrame, mode: str = "fill-missing") -> pd.Dat
     taxid = pd.to_numeric(res["taxid"], errors="coerce").astype("Int64")
     species = taxid.map(SPECIES_MAP).fillna(taxid.astype("string"))  # keep taxid if unknown
 
-    assign_column(curation_df, "Target gene_ID", clean.map(res["entrezgene"]), mode)
-    assign_column(curation_df, "Target gene symbol", clean.map(res["symbol"]), mode)
-    assign_column(curation_df, "Target_species", clean.map(species), mode)
+    # build lookup dicts: uniprot_id -> mapped value
+    gene_id_map = res["entrezgene"].dropna().astype("string").to_dict()
+    symbol_map = res["symbol"].dropna().astype("string").to_dict()
+    species_map = species.dropna().astype("string").to_dict()
+
+    def join_mapped(mapping: dict[str, str]) -> pd.Series:
+        mapped_col = []
+
+        for row_ids in split_ids:
+            # Collect unique mapped values while preserving order
+            vals = list(dict.fromkeys(mapping[unique_id] for unique_id in row_ids if unique_id in mapping)) #dict.fromkey preserves order and removes duplicates
+            mapped_col.append(";".join(vals) if vals else pd.NA)
+
+        return pd.Series(mapped_col, index=curation_df.index, dtype="string")
+
+    assign_column(curation_df, "Target gene_ID", join_mapped(gene_id_map), mode)
+    assign_column(curation_df, "Target gene symbol", join_mapped(symbol_map), mode)
+    assign_column(curation_df, "Target_species", join_mapped(species_map), mode)
     return curation_df
 
 
